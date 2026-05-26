@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Outil boutique — Gestion commandes web</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f3;
+      color: #1a1a18;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+    .subtitle { font-size: 13px; color: #73726c; margin-bottom: 24px; }
+    button { font-family: inherit; cursor: pointer; }
+    .card {
+      background: #fff;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+    .card-gray {
+      background: #f1efe8;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+    .case-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
+    }
+    .case-btn {
+      background: #fff;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: #1a1a18;
+      transition: background 0.15s;
+    }
+    .case-btn:hover { background: #f1efe8; }
+    .back-btn {
+      font-size: 13px;
+      color: #73726c;
+      background: none;
+      border: none;
+      padding: 0;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .history-row {
+      font-size: 13px;
+      color: #73726c;
+      padding: 6px 0;
+      border-bottom: 0.5px solid #e8e6df;
+      display: flex;
+      gap: 8px;
+    }
+    .answer-yes { color: #0F6E56; white-space: nowrap; }
+    .answer-no { color: #993C1D; white-space: nowrap; }
+    .question-card {
+      background: #f1efe8;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .question-meta { font-size: 12px; color: #73726c; margin-bottom: 8px; }
+    .question-text { font-size: 15px; font-weight: 500; }
+    .btn-row { display: flex; gap: 10px; }
+    .btn-yes {
+      flex: 1; padding: 14px;
+      border-radius: 8px; font-size: 14px; font-weight: 500;
+      background: #E1F5EE; color: #0F6E56; border: 1px solid #5DCAA5;
+    }
+    .btn-no {
+      flex: 1; padding: 14px;
+      border-radius: 8px; font-size: 14px; font-weight: 500;
+      background: #FAECE7; color: #712B13; border: 1px solid #F0997B;
+    }
+    .badge {
+      font-size: 12px; font-weight: 500;
+      padding: 3px 10px; border-radius: 20px;
+      display: inline-block;
+    }
+    .label-sm {
+      font-size: 12px; color: #73726c;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .script-box {
+      background: #fff;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+    .script-text { font-size: 14px; line-height: 1.65; font-style: italic; }
+    .action-box {
+      background: #f1efe8;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .action-text { font-size: 14px; line-height: 1.6; }
+    .action-text a { color: #185FA5; text-decoration: underline; }
+    .restart-btn {
+      font-size: 13px; color: #73726c;
+      background: none;
+      border: 0.5px solid #d3d1c7;
+      border-radius: 8px;
+      padding: 8px 14px;
+    }
+    .grafana-note {
+      display: inline-block;
+      background: #E6F1FB;
+      color: #0C447C;
+      border: 1px solid #85B7EB;
+      border-radius: 6px;
+      font-size: 12px;
+      padding: 4px 10px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="container" id="root"></div>
+<script type="text/babel">
+
+const SAV_URL = "[URL NOUS CONTACTER]"; // ← Remplacer par l'URL de votre page Nous contacter
+
+const CASES = [
+  { id: "retard", label: "Retard de livraison", icon: "⏱" },
+  { id: "non_recu", label: "Commande non reçue", icon: "📦" },
+  { id: "suivi_indispo", label: "Suivi colis indisponible", icon: "🔍" },
+  { id: "produit_pb", label: "Produit manquant ou abîmé", icon: "⚠️" },
+  { id: "remboursement", label: "Demande de remboursement", icon: "💶" },
+  { id: "perdu", label: "Colis perdu", icon: "❓" },
+  { id: "retour", label: "Retour / échange commande web", icon: "🔄" },
+  { id: "mecontent", label: "Client mécontent / escalade", icon: "🔴" },
+];
+
+const GRAFANA = "Consulter Grafana pour vérifier le statut de la commande avant de répondre au client.";
+
+const SAV_ACTION = `Communiquer la page <a href="${SAV_URL}" target="_blank">Nous contacter</a> au client.`;
+
+const STOCKLY = {
+  title: "Commande Stockly ou Drop",
+  script: "« Pour ce type de commande, notre service client dispose des informations nécessaires pour vous aider. Je vous invite à les contacter via le formulaire « Nous contacter » sur notre site en indiquant votre numéro de commande. »",
+  action: SAV_ACTION,
+  badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" },
+  borderColor: "#534AB7"
+};
+
+const PLAYBOOKS = {
+  retard: {
+    steps: [
+      { q: "La commande est-elle de type Stockly ou Drop ?", oui: "step_stockly", non: 1 },
+      { q: "Le client a-t-il son numéro de commande ?", oui: 2, non: "step_no_order" },
+      { q: "Quel est le statut indiqué dans Grafana ?", oui: 3, non: "step_livre", ouiLabel: "En cours d'acheminement", nonLabel: "Indiqué comme livré" },
+      { q: "Le retard est-il supérieur à 5 jours ouvrés ?", oui: "step_escalade", non: "step_wait" },
+    ],
+    nodes: {
+      step_stockly: STOCKLY,
+      step_no_order: { title: "Sans numéro de commande", script: "« Je comprends votre situation. Pour accéder à votre commande, j'ai besoin de votre numéro ou de l'adresse e-mail utilisée lors de l'achat. Avez-vous accès à votre confirmation de commande ? »", action: `${GRAFANA} Rechercher la commande par e-mail dans Grafana.`, badge: "Autonomie boutique", badgeStyle: { background: "#E1F5EE", color: "#0F6E56", border: "1px solid #5DCAA5" }, borderColor: "#0F6E56" },
+      step_livre: { title: "Colis indiqué comme livré — non reçu", script: "« Le transporteur indique que votre colis a été livré. Avant toute démarche, pouvez-vous vérifier : votre boîte aux lettres, un dépôt chez un voisin, ou un avis de passage laissé par le transporteur ? Si après vérification vous ne retrouvez pas le colis, je vous invite à contacter notre service client via le formulaire « Nous contacter » sur notre site en indiquant votre numéro de commande. »", action: SAV_ACTION, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+      step_wait: { title: "Retard dans les délais normaux", script: "« Je vois que votre colis est en cours d'acheminement. Votre délai de livraison estimé est [date]. Les retards de quelques jours sont possibles en période chargée. Je vous remercie de votre patience. »", action: `${GRAFANA} Communiquer la date estimée visible dans Grafana.`, badge: "Autonomie boutique", badgeStyle: { background: "#E1F5EE", color: "#0F6E56", border: "1px solid #5DCAA5" }, borderColor: "#0F6E56" },
+      step_escalade: { title: "Retard anormal — contacter le SAV", script: "« Ce délai dépasse nos standards habituels. Notre service client dispose des accès nécessaires pour agir directement auprès du transporteur. Je vous invite à les contacter via le formulaire « Nous contacter » sur notre site en précisant votre numéro de commande et la date d'expédition. »", action: `${GRAFANA} ${SAV_ACTION} Ne pas ouvrir de dossier transporteur depuis la boutique.`, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+    }
+  },
+  non_recu: {
+    steps: [
+      { q: "La commande est-elle de type Stockly ou Drop ?", oui: "step_stockly", non: 1 },
+      { q: "Le statut dans Grafana indique-t-il 'Livré' ?", oui: 2, non: "step_en_route" },
+      { q: "Le client a-t-il vérifié les lieux de dépôt (voisin, gardien, point relais) ?", oui: "step_enquete", non: "step_verif" },
+    ],
+    nodes: {
+      step_stockly: STOCKLY,
+      step_en_route: { title: "Colis encore en route", script: "« Votre colis est en cours de livraison. Le statut sera mis à jour dès que le transporteur aura effectué la remise. »", action: `${GRAFANA} Vérifier la date de livraison estimée dans Grafana et la communiquer au client.`, badge: "Autonomie boutique", badgeStyle: { background: "#E1F5EE", color: "#0F6E56", border: "1px solid #5DCAA5" }, borderColor: "#0F6E56" },
+      step_verif: { title: "Vérifier les points de dépôt", script: "« Le transporteur peut laisser un colis chez un voisin, en point relais ou en gardiennage. Avez-vous vérifié ces endroits ? Un avis de passage a-t-il été laissé ? »", action: `${GRAFANA} Consulter les détails de livraison dans Grafana.`, badge: "Autonomie boutique", badgeStyle: { background: "#E1F5EE", color: "#0F6E56", border: "1px solid #5DCAA5" }, borderColor: "#0F6E56" },
+      step_enquete: { title: "Colis introuvable après vérification", script: "« Je comprends, c'est une situation frustrante. Notre service client dispose des accès pour ouvrir une enquête directement auprès du transporteur. Je vous invite à les contacter via le formulaire « Nous contacter » sur notre site en indiquant votre numéro de commande et le statut de livraison indiqué. »", action: SAV_ACTION, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+    }
+  },
+  suivi_indispo: {
+    steps: [
+      { q: "La commande est-elle de type Stockly ou Drop ?", oui: "step_stockly", non: 1 },
+      { q: "L'expédition date-t-elle de moins de 24h ?", oui: "step_attente", non: 2 },
+      { q: "Le numéro de suivi est-il valide dans Grafana ?", oui: "step_transporteur", non: "step_invalide" },
+    ],
+    nodes: {
+      step_stockly: STOCKLY,
+      step_attente: { title: "Délai d'activation normal", script: "« Votre colis vient d'être expédié. Le numéro de suivi est activé sous 24h. N'hésitez pas à vérifier sur notre site demain. »", action: `${GRAFANA} Aucune action requise si expédition < 24h.`, badge: "Autonomie boutique", badgeStyle: { background: "#E1F5EE", color: "#0F6E56", border: "1px solid #5DCAA5" }, borderColor: "#0F6E56" },
+      step_transporteur: { title: "Délai de mise à jour du suivi", script: "« Il semblerait qu'il y ait un délai de mise à jour du suivi de votre colis. Pour que notre service client puisse investiguer, je vous invite à les contacter via le formulaire « Nous contacter » sur notre site en indiquant votre numéro de commande et votre numéro de suivi. »", action: SAV_ACTION, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+      step_invalide: { title: "Numéro de suivi invalide", script: "« Le numéro de suivi ne semble pas reconnu. Notre service client pourra vérifier directement avec l'entrepôt. Je vous invite à les contacter via le formulaire « Nous contacter » sur notre site en indiquant votre numéro de commande. »", action: `${GRAFANA} ${SAV_ACTION}`, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+    }
+  },
+  produit_pb: {
+    steps: [
+      { q: "La commande est-elle de type Stockly ou Drop ?", oui: "step_stockly", non: 1 },
+      { q: "Le problème est-il visible à l'ouverture du colis ?", oui: 2, non: "step_usage" },
+      { q: "Le client a-t-il des photos du produit et de l'emballage ?", oui: "step_avec_photos", non: "step_sans_photos" },
+    ],
+    nodes: {
+      step_stockly: STOCKLY,
+      step_usage: { title: "Problème constaté à l'usage", script: "« Je suis désolé(e) pour cette situation. Pour traiter votre réclamation, je vous invite à contacter notre service client via le formulaire « Nous contacter » sur notre site en décrivant le défaut constaté et en joignant si possible des photos. »", action: `${GRAFANA} ${SAV_ACTION}`, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+      step_sans_photos: { title: "Inciter à prendre des photos", script: "« Pour que votre réclamation soit traitée rapidement, des photos du produit et de l'emballage sont indispensables. Une fois prêtes, contactez notre service client via le formulaire « Nous contacter » sur notre site en les joignant à votre message. »", action: SAV_ACTION, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+      step_avec_photos: { title: "Réclamation avec preuves", script: "« Merci pour ces photos. Pour finaliser votre réclamation, je vous invite à les transmettre via le formulaire « Nous contacter » sur notre site avec votre numéro de commande. Notre service client reviendra vers vous dans les meilleurs délais. »", action: SAV_ACTION, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+    }
+  },
+  remboursement: {
+    steps: [
+      { q: "La commande est-elle de type Stockly ou Drop ?", oui: "step_stockly", non: 1 },
+      { q: "L'achat a-t-il été effectué sur le site web ?", oui: 2, non: "step_boutique" },
+      { q: "La commande est-elle dans le délai légal de rétractation (14 jours) ?", oui: 3, non: "step_hors_delai" },
+      { q: "Le produit est-il retournable (non ouvert, hors exclusion) ?", oui: "step_eligible", non: "step_exclusion" },
+    ],
+    nodes: {
+      step_stockly: STOCKLY,
+      step_boutique: { title: "Achat en boutique — remboursement en boutique", script: "« Pour un article acheté en boutique, nous gérons votre remboursement directement ici. »", action: "Traiter le remboursement en boutique selon le processus interne.", badge: "Autonomie boutique", badgeStyle: { background: "#E1F5EE", color: "#0F6E56", border: "1px solid #5DCAA5" }, borderColor: "#0F6E56" },
+      step_hors_delai: { title: "Hors délai de rétractation", script: "« Le délai légal de rétractation de 14 jours est dépassé. Selon notre politique, un remboursement n'est plus possible à ce stade, sauf défaut produit. Je peux vérifier si votre cas ouvre droit à la garantie légale. »", action: `${GRAFANA} Si défaut allégué : orienter vers le formulaire SAV. Sinon : informer de la politique commerciale.`, badge: "Autonomie boutique", badgeStyle: { background: "#E1F5EE", color: "#0F6E56", border: "1px solid #5DCAA5" }, borderColor: "#0F6E56" },
+      step_exclusion: { title: "Produit en exclusion", script: "« Ce type de produit est soumis à des conditions spécifiques de retour. Je vous invite à contacter notre service client via le formulaire « Nous contacter » sur notre site pour vérifier si une exception est possible. »", action: SAV_ACTION, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+      step_eligible: { title: "Remboursement éligible — commande web", script: "« Votre demande de remboursement est éligible. Pour un article acheté sur notre site, la demande s'effectue via le formulaire « Nous contacter » sur notre site en indiquant votre numéro de commande. Notre service client vous guidera pour la suite. »", action: `${GRAFANA} ${SAV_ACTION}`, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+    }
+  },
+  perdu: {
+    steps: [
+      { q: "La commande est-elle de type Stockly ou Drop ?", oui: "step_stockly", non: 1 },
+      { q: "Le délai depuis l'expédition est-il > 15 jours ouvrés dans Grafana ?", oui: 2, non: "step_trop_tot" },
+      { q: "Une enquête transporteur a-t-elle déjà été ouverte ?", oui: "step_suivi", non: "step_ouvrir" },
+    ],
+    nodes: {
+      step_stockly: STOCKLY,
+      step_trop_tot: { title: "Trop tôt pour qualifier de perte", script: "« Votre colis est encore dans les délais de livraison. Je comprends l'inquiétude, mais il est encore trop tôt pour qualifier cela de perte. N'hésitez pas à revenir vers nous si la situation n'évolue pas. »", action: `${GRAFANA} Vérifier la date d'expédition dans Grafana et communiquer le délai restant.`, badge: "Autonomie boutique", badgeStyle: { background: "#E1F5EE", color: "#0F6E56", border: "1px solid #5DCAA5" }, borderColor: "#0F6E56" },
+      step_ouvrir: { title: "Colis potentiellement perdu", script: "« Votre colis semble effectivement perdu. Notre service client dispose des accès pour ouvrir une enquête officielle auprès du transporteur. Je vous invite à les contacter via le formulaire « Nous contacter » sur notre site en indiquant votre numéro de commande et la date d'expédition. »", action: `${GRAFANA} ${SAV_ACTION} Ne pas ouvrir d'enquête depuis la boutique.`, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+      step_suivi: { title: "Enquête déjà en cours", script: "« Une enquête est déjà ouverte auprès du transporteur. Pour suivre son avancement, je vous invite à recontacter notre service client via le formulaire « Nous contacter » sur notre site en mentionnant que votre dossier est déjà en cours de traitement. »", action: `${SAV_ACTION} Ne pas relancer le transporteur en parallèle.`, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+    }
+  },
+  retour: {
+    steps: [
+      { q: "La commande est-elle de type Stockly ou Drop ?", oui: "step_stockly", non: 1 },
+      { q: "La commande a-t-elle été passée en ligne (site e-commerce) ?", oui: "step_web", non: "step_boutique" },
+    ],
+    nodes: {
+      step_stockly: STOCKLY,
+      step_boutique: { title: "Achat en boutique — retour en boutique", script: "« Pour un article acheté en boutique, nous gérons votre retour directement ici. »", action: "Traiter le retour selon le processus boutique standard.", badge: "Autonomie boutique", badgeStyle: { background: "#E1F5EE", color: "#0F6E56", border: "1px solid #5DCAA5" }, borderColor: "#0F6E56" },
+      step_web: { title: "Achat web — orientation SAV", script: "« Pour un article acheté sur notre site, le retour ou l'échange se gère via notre service client. Je vous invite à les contacter via le formulaire « Nous contacter » sur notre site en indiquant votre numéro de commande et le motif de votre retour. »", action: `${GRAFANA} ${SAV_ACTION} Ne pas traiter le retour web en boutique.`, badge: "Orientation SAV", badgeStyle: { background: "#EEEDFE", color: "#3C3489", border: "1px solid #AFA9EC" }, borderColor: "#534AB7" },
+    }
+  },
+  mecontent: {
+    steps: [
+      { q: "La commande est-elle de type Stockly ou Drop ?", oui: "step_stockly", non: 1 },
+      { q: "Le client exprime-t-il une menace (réseaux sociaux, juridique, presse) ?", oui: "step_litigation", non: 2 },
+      { q: "Le problème a-t-il déjà été escaladé sans résolution ?", oui: "step_reescalade", non: "step_ecoute" },
+    ],
+    nodes: {
+      step_stockly: STOCKLY,
+      step_litigation: { title: "Situation critique — litigation", script: "« Je comprends votre mécontentement et je prends votre situation très au sérieux. Je vais immédiatement transmettre votre dossier à notre responsable service client qui vous contactera dans les plus brefs délais. »", action: `${GRAFANA} Ne pas promettre de solution. Ne pas minimiser. Prévenir le manager boutique immédiatement. ${SAV_ACTION}`, badge: "Escalade litigation", badgeStyle: { background: "#FCEBEB", color: "#791F1F", border: "1px solid #F09595" }, borderColor: "#791F1F" },
+      step_reescalade: { title: "Réescalade — priorité haute", script: "« Je comprends votre frustration, notamment après un premier contact sans résolution. Je vais personnellement signaler l'urgence de votre dossier à notre service client pour un traitement prioritaire. »", action: `${GRAFANA} ${SAV_ACTION} Mentionner explicitement 'contact précédent non résolu'.`, badge: "Escalade urgente", badgeStyle: { background: "#FAECE7", color: "#712B13", border: "1px solid #F0997B" }, borderColor: "#993C1D" },
+      step_ecoute: { title: "Écoute active — primo-contact", script: "« Je vous entends et je comprends que cette situation est vraiment contraignante. Laissez-moi prendre en charge votre dossier. Pouvez-vous me donner votre numéro de commande pour que je puisse regarder ça avec vous ? »", action: `${GRAFANA} Ne pas interrompre. Ne pas justifier l'erreur. Ne pas dire 'c'est la faute du transporteur'. Rester calme et factuel.`, badge: "Posture client", badgeStyle: { background: "#E6F1FB", color: "#0C447C", border: "1px solid #85B7EB" }, borderColor: "#185FA5" },
+    }
+  },
+};
+
+function App() {
+  const [selectedCase, setSelectedCase] = React.useState(null);
+  const [stepIndex, setStepIndex] = React.useState(0);
+  const [history, setHistory] = React.useState([]);
+  const [finalNode, setFinalNode] = React.useState(null);
+
+  const playbook = selectedCase ? PLAYBOOKS[selectedCase] : null;
+
+  const selectCase = (id) => { setSelectedCase(id); setStepIndex(0); setHistory([]); setFinalNode(null); };
+  const reset = () => { setSelectedCase(null); setStepIndex(0); setHistory([]); setFinalNode(null); };
+
+  const answer = (choice) => {
+    const step = playbook.steps[stepIndex];
+    const next = choice === "oui" ? step.oui : step.non;
+    const label = choice === "oui" ? (step.ouiLabel || "Oui") : (step.nonLabel || "Non");
+    const newHistory = [...history, { q: step.q, a: label, isYes: choice === "oui" }];
+    setHistory(newHistory);
+    if (typeof next === "number") { setStepIndex(next); }
+    else { setFinalNode(playbook.nodes[next]); }
+  };
+
+  return (
+    <div className="container">
+      <h1>Gestion des commandes web en boutique</h1>
+      <p className="subtitle">Sélectionnez la situation du client pour accéder à la trame de réponse.</p>
+
+      {!selectedCase && (
+        <div className="case-grid">
+          {CASES.map(c => (
+            <button key={c.id} className="case-btn" onClick={() => selectCase(c.id)}>
+              <span style={{fontSize:22}}>{c.icon}</span> {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {selectedCase && !finalNode && playbook && (
+        <div>
+          <button className="back-btn" onClick={reset}>← Retour aux cas</button>
+          <p style={{fontSize:15, fontWeight:500, marginBottom:16}}>
+            {CASES.find(c=>c.id===selectedCase)?.icon} {CASES.find(c=>c.id===selectedCase)?.label}
+          </p>
+          {history.length > 0 && (
+            <div style={{marginBottom:16}}>
+              {history.map((h,i) => (
+                <div key={i} className="history-row">
+                  <span style={{flex:1, fontWeight:500}}>{h.q}</span>
+                  <span className={h.isYes ? "answer-yes" : "answer-no"}>→ {h.a}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="question-card">
+            <p className="question-meta">Question {stepIndex + 1} / {playbook.steps.length}</p>
+            <p className="question-text">{playbook.steps[stepIndex].q}</p>
+          </div>
+          <div className="btn-row">
+            <button className="btn-yes" onClick={() => answer("oui")}>{playbook.steps[stepIndex].ouiLabel || "Oui"}</button>
+            <button className="btn-no" onClick={() => answer("non")}>{playbook.steps[stepIndex].nonLabel || "Non"}</button>
+          </div>
+        </div>
+      )}
+
+      {finalNode && (
+        <div>
+          <button className="back-btn" onClick={reset}>← Retour aux cas</button>
+          <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:16}}>
+            <span style={{fontSize:16, fontWeight:500}}>{finalNode.title}</span>
+            <span className="badge" style={finalNode.badgeStyle}>{finalNode.badge}</span>
+          </div>
+          <div className="script-box">
+            <p className="label-sm">Script de réponse client</p>
+            <p className="script-text">{finalNode.script}</p>
+          </div>
+          <div className="action-box" style={{borderLeft:`3px solid ${finalNode.borderColor}`}}>
+            <p className="label-sm">Action équipe</p>
+            <p className="action-text" dangerouslySetInnerHTML={{__html: finalNode.action}} />
+          </div>
+          <button className="restart-btn" onClick={() => { setStepIndex(0); setHistory([]); setFinalNode(null); }}>
+            ↺ Recommencer ce cas
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
